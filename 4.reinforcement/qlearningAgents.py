@@ -139,7 +139,7 @@ class QLearningAgent(ReinforcementAgent):
 class PacmanQAgent(QLearningAgent):
     "Exactly the same as QLearningAgent, but with different default parameters"
 
-    def __init__(self, epsilon=0.05,gamma=0.8,alpha=0.2, numTraining=0, **args):
+    def __init__(self, epsilon=0.05,gamma=0.9,alpha=0.2, numTraining=0, **args):
         """
         These default parameters can be changed from the pacman.py command line.
         For example, to change the exploration rate, try:
@@ -217,3 +217,33 @@ class ApproximateQAgent(PacmanQAgent):
             # you might want to print your weights here for debugging
             "*** YOUR CODE HERE ***"
             pass
+
+class SemiGradientTDAgent(ApproximateQAgent):
+    def __init__(self, lambda_=0.9, epsilonDecay=0.99, **args):
+        super().__init__(**args)
+        self.lambda_ = lambda_
+        self.eligibilityTraces = util.Counter()
+        self.epsilonDecay = epsilonDecay
+    
+    def update(self, state, action, nextState, reward):
+        nextAction = self.getPolicy(nextState)
+        if nextAction:
+            nextQValue = self.getQValue(nextState, nextAction)
+        else:
+            nextQValue = 0
+        currentQValue = self.getQValue(state, action)
+        TDE = reward + (self.discount * nextQValue) - currentQValue
+
+        features = self.featExtractor.getFeatures(state, action)
+        for feature in features:
+            self.eligibilityTraces[feature] = self.discount * self.lambda_ * self.eligibilityTraces[feature] + features[feature]
+
+        for feature, value in features.items(): 
+            self.weights[feature] += self.alpha * TDE * self.eligibilityTraces[feature]
+            
+    def final(self, state):
+        self.eligibilityTraces = util.Counter()
+        super().final(state)
+        if self.numTraining > 0:
+            self.epsilon *= self.epsilon_decay
+
