@@ -230,20 +230,17 @@ class SemiGradientTDAgent(ApproximateQAgent):
         if nextAction:
             nextQValue = self.getQValue(nextState, nextAction)
         else:
-            nextQValue = 0
+            nextQValue = 0.0
         currentQValue = self.getQValue(state, action)
         TDE = reward + (self.discount * nextQValue) - currentQValue
 
         features = self.featExtractor.getFeatures(state, action)
         for feature in features:
             self.eligibilityTraces[feature] = self.discount * self.lambda_ * self.eligibilityTraces[feature] + features[feature]
-
-        for feature, value in features.items(): 
             self.weights[feature] += self.alpha * TDE * self.eligibilityTraces[feature]
             
     def final(self, state):
         self.eligibilityTraces = util.Counter()
+        self.epsilon *= self.epsilonDecay
         super().final(state)
-        if self.numTraining > 0:
-            self.epsilon *= self.epsilon_decay
 
