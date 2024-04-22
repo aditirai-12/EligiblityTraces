@@ -247,3 +247,34 @@ class SemiGradientTDAgent(ApproximateQAgent):
         if self.numTraining > 0:
             self.epsilon *= self.epsilon_decay
 
+class TrueOnlineTDAgent(ApproximateQAgent):
+    def __init__(self, lambda_=0.9, epsilonDecay=0.99, **args):
+        super().__init__(**args)
+        self.lambda_ = lambda_
+        self.z = util.Counter()
+        self.epsilonDecay = epsilonDecay
+        self.oldV = 0
+
+    def update(self, state, action, nextState, reward):
+        nextAction = self.getPolicy(nextState)
+        nextQValue = self.getQValue(nextState, nextAction) if nextAction else 0
+        currentQValue = self.getQValue(state, action)
+        
+        delta = reward + self.discount * nextQValue - currentQValue
+
+        features = self.featExtractor.getFeatures(state, action)
+
+        for feature in features:
+            self.z[feature] *= self.discount * self.lambda_
+            self.z[feature] += (1 - self.alpha * self.discount * self.lambda_ * self.z[feature]) * features[feature]
+
+            self.weights[feature] += self.alpha * (delta + currentQValue - self.oldV) * self.z[feature]
+            self.weights[feature] -= self.alpha * (currentQValue - self.oldV) * features[feature]
+
+        self.oldV = nextQValue
+
+    def final(self, state):
+        self.z = util.Counter()
+        super().final(state)
+        if self.numTraining > 0:
+            self.epsilon *= self.epsilonDecay
