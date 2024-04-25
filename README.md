@@ -1,4 +1,12 @@
 #EligiblityTraces
+The code is made using python3.11 as a command so python 3.11 should be installed.
+
+The files we worked on are qlearningAgents.py, testing_all_at_once.py and testing_win_rates_tepisodes.py.
+
+The report is named as TeamProject3.pdf
+
+The team effectiveness report is named as team_effectiveness_report.pdf
+
 run
 python testing_all_at_once.py
 in the command line to run the test for all 3 agents at once and get the graph for it
